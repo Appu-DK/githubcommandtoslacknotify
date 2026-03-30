@@ -32,14 +32,22 @@ nohup mvn spring-boot:run > app.log 2>&1 &
 APP_PID=$!
 
 # Wait for app to start
-echo "⏳ Waiting for app to start..."
-for i in {1..30}; do
+echo "⏳ Waiting for app to start (this may take 30-60 seconds)..."
+APP_STARTED=false
+for i in {1..60}; do
     if curl -s -o /dev/null -w "%{http_code}" http://localhost:$APP_PORT/h2-console 2>/dev/null | grep -q "302"; then
         echo "✅ App started on port $APP_PORT (PID: $APP_PID)"
+        APP_STARTED=true
         break
     fi
     sleep 2
 done
+
+if [ "$APP_STARTED" = false ]; then
+    echo "❌ App failed to start. Check app.log"
+    tail -10 app.log
+    exit 1
+fi
 
 # Step 3: Start tunnel and capture URL
 echo "🌐 Starting tunnel..."
